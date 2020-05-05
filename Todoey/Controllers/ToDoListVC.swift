@@ -7,17 +7,23 @@
 //
 
 import UIKit
+import CoreData
+
 
 class ToDoListVC: UITableViewController {
     
     var listArray = [Item]()
-    let dataFilePathe = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    
+//    let dataFilePathe = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
  
         
-                 loadItems()
+        loadItems()
+              
     }
 
     // MARK: - Table view data source
@@ -28,12 +34,12 @@ class ToDoListVC: UITableViewController {
  
         let item = listArray[indexPath.row]
 
-        cell.textLabel?.text = item.Title
+        cell.textLabel?.text = item.title
 
         //Ternary operator ==>
         // value = condition ? valueIfTrue : valueIfFalse
         
-        cell.accessoryType = item.Done ? .checkmark : .none
+        cell.accessoryType = item.done ? .checkmark : .none
 
      
         
@@ -52,13 +58,15 @@ class ToDoListVC: UITableViewController {
         
 
 //
+//
+//        if listArray[indexPath.row].done == false {
+//            listArray[indexPath.row].done = true
+//
+//        } else {
+//            listArray[indexPath.row].done = false
+//        }
         
-        if listArray[indexPath.row].Done == false {
-            listArray[indexPath.row].Done = true
-            
-        } else {
-            listArray[indexPath.row].Done = false
-        }
+        listArray[indexPath.row].done = !listArray[indexPath.row].done
         
         tableView.deselectRow(at: indexPath, animated: true)
         
@@ -82,9 +90,9 @@ class ToDoListVC: UITableViewController {
         
         let action = UIAlertAction(title: "add item", style: .default) { (action) in
         
-            let newItem = Item()
-            newItem.Title = textField.text!
-
+            let newItem = Item(context: self.context)
+            newItem.title = textField.text!
+            newItem.done = false
             self.listArray.append(newItem)
             self.saveItems()
             
@@ -99,11 +107,9 @@ class ToDoListVC: UITableViewController {
     
     
     func saveItems() {
-        let encoder = PropertyListEncoder()
-        do {
-            let data = try encoder.encode(listArray)
-            try data.write(to: dataFilePathe!)}
-        catch {print("error while encoding\(error)")}
+ 
+        do {try context.save()}
+        catch {print("error while saving context \(error)")}
         tableView.reloadData()
         
     }
@@ -113,12 +119,13 @@ class ToDoListVC: UITableViewController {
         
         
         
-        if let data = try? Data(contentsOf: dataFilePathe!) {
-            let decoder = PropertyListDecoder()
+        let request : NSFetchRequest = Item.fetchRequest()
+     
        
-        do { listArray = try decoder.decode([Item].self, from: data) }
-        catch {"error while decoding \(error)"}
+        do {
+            listArray = try context.fetch(request) }
+        catch {"error while loading attritubtes \(error)"}
 
-    }
+    
     }
 }
